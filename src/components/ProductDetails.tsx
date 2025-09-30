@@ -284,7 +284,7 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
                   {product.quantity === 0 && (
                     <div className="border-2 border-red-500 bg-red-50 px-3 py-2 rounded-lg">
                       <div className="text-sm font-medium text-red-600">
-                        Out of Stock
+                        OUT OF STOCK
                       </div>
                     </div>
                   )}
