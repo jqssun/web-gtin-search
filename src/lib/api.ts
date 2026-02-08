@@ -1,6 +1,6 @@
 import { GTINRequest, GTINResponse } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.PUBLIC_API_URL || 'http://localhost:8000';
 
 export async function getProductByGTIN(gtin: string): Promise<GTINResponse> {
   const request: GTINRequest = { gtin, raw: false };

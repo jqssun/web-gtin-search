@@ -1,13 +1,9 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProductData, Promotion } from '@/lib/types';
-import { openPrivateLink } from '@/lib/utils';
-import { ChevronDown, ChevronUp, ExternalLink, ShoppingCart, Star } from 'lucide-react';
+import { formatStoreName, getCurrencySymbol, openPrivateLink } from '@/lib/utils';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ProductDetailsProps {
   products: Record<string, ProductData>;
@@ -16,161 +12,209 @@ interface ProductDetailsProps {
 export default function ProductDetails({ products }: ProductDetailsProps) {
   const productEntries = Object.entries(products);
   const [selectedImage, setSelectedImage] = useState<Record<string, number>>({});
-  const [expandedPromos, setExpandedPromos] = useState<Record<string, boolean>>({});
+  const [shareSuccess, setShareSuccess] = useState<string | null>(null);
+  const scrollContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [scrollPositions, setScrollPositions] = useState<Record<string, { atStart: boolean; atEnd: boolean }>>({});
 
-  // Helper function to filter out empty/invalid images
   const getValidImages = (images: string[] | undefined) => {
-    return images?.filter(img => img && img.trim() !== '') || [];
+    const filtered = images?.filter(img => img && img.trim() !== '') || [];
+    return filtered.reverse();
   };
 
-  // Helper function to format timestamps to readable dates
   const formatDate = (timestamp: number) => {
     if (timestamp <= 0) return null;
-    return new Date(timestamp * 1000).toLocaleDateString();
+    return new Date(timestamp * 1000).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
-  // Helper function to format promo text (strip underscores and convert to uppercase)
   const formatPromoText = (text: string) => {
     return text.replace(/_/g, ' ').toUpperCase();
   };
 
-  // Helper function to render a promotion
-  const renderPromotion = (promo: string | Promotion, index: number) => {
+  const formatPrice = (price: number, currency: string) => {
+    const symbol = getCurrencySymbol(currency);
+    return `${symbol}${price.toFixed(2)}`;
+  };
+
+  const updateScrollPosition = (store: string, container: HTMLDivElement) => {
+    const atStart = container.scrollLeft <= 0;
+    const atEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 1;
+    setScrollPositions(prev => ({ ...prev, [store]: { atStart, atEnd } }));
+  };
+
+  useEffect(() => {
+    Object.entries(scrollContainerRefs.current).forEach(([store, container]) => {
+      if (container) {
+        updateScrollPosition(store, container);
+      }
+    });
+  }, [productEntries.length]);
+
+  const handleShare = async (storeName: string, productName: string) => {
+    try {
+      const url = `${window.location.origin}${window.location.pathname}#${storeName}`;
+
+      if (navigator.share) {
+        await navigator.share({
+          title: `${productName} - ${formatStoreName(storeName)}`,
+          text: `Check out this product from ${formatStoreName(storeName)}`,
+          url: url
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareSuccess(storeName);
+        setTimeout(() => setShareSuccess(null), 2000);
+      }
+    } catch (err) {
+      console.error('Failed to share:', err);
+    }
+  };
+
+  const renderPromotion = (promo: string | Promotion, index: number, currency: string) => {
     if (typeof promo === 'string') {
       return (
-        <div key={index} className="p-3 bg-green-50 rounded-lg border border-green-200">
-          <span className="text-green-800 text-sm break-words">{promo}</span>
+        <div key={index} className="govuk-inset-text" style={{ backgroundColor: '#d5e8d4', borderLeft: '5px solid #00703c', padding: '12px', margin: 0 }}>
+          <span className="govuk-body-s">{promo}</span>
         </div>
       );
     }
 
     return (
-      <div key={index} className="relative p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 space-y-3">
-        {promo.url && (
-          <div className="absolute top-3 right-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => openPrivateLink(promo.url!)}
-              className="h-10 w-10 p-0 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-            >
-              <ExternalLink className="w-5 h-5" />
-            </Button>
-          </div>
-        )}
-        
+      <div key={index} className="govuk-inset-text" style={{ backgroundColor: '#d5e8d4', borderLeft: '5px solid #00703c', padding: '12px', margin: 0 }}>
         {promo.name && (
-          <h5 className="font-semibold text-green-900 break-words pr-12">{formatPromoText(promo.name)}</h5>
+          <h5 className="govuk-heading-s" style={{ color: '#00703c', marginBottom: '10px' }}>
+            {promo.url ? (
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openPrivateLink(promo.url!);
+                }}
+                className="govuk-link"
+                style={{ color: '#00703c', textDecoration: 'underline' }}
+              >
+                {formatPromoText(promo.name)}
+              </a>
+            ) : (
+              formatPromoText(promo.name)
+            )}
+          </h5>
         )}
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          {promo.base && (
-            <div>
-              <span className="font-medium text-green-800">Base: </span>
-              <span className="text-green-700 break-words">{formatPromoText(promo.base)}</span>
-            </div>
-          )}
-          
-          {promo.loyalty && (
-            <div>
-              <span className="font-medium text-green-800">Loyalty: </span>
-              <span className="text-green-700 break-words">{formatPromoText(promo.loyalty)}</span>
-            </div>
-          )}
-          
-          {((promo.start && promo.start > 0) || (promo.end && promo.end > 0)) && (
-            <div className="sm:col-span-2">
-              <div className="flex flex-wrap items-center gap-4">
-                {(promo.start && promo.start > 0) && (
-                  <div>
-                    <span className="font-medium text-green-800">Start: </span>
-                    <span className="text-green-700">{formatDate(promo.start)}</span>
-                  </div>
-                )}
-                
-                {(promo.end && promo.end > 0) && (
-                  <div>
-                    <span className="font-medium text-green-800">End: </span>
-                    <span className="text-green-700">{formatDate(promo.end)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
 
-        {(promo.old_price && promo.old_price > 0) || (promo.new_price && promo.new_price > 0) ? (
-          <div className="flex items-center gap-3 pt-2 border-t border-green-200">
-            {promo.old_price && promo.old_price > 0 && (
-              <div className="text-sm">
-                <span className="font-medium text-green-800">Before: </span>
-                <span className="font-bold text-green-900">{promo.old_price.toFixed(2)}</span>
-              </div>
-            )}
-            {promo.new_price && promo.new_price > 0 && (
-              <div className="text-sm">
-                <span className="font-medium text-green-800">Current: </span>
-                <span className="font-bold text-green-900">{promo.new_price.toFixed(2)}</span>
-              </div>
-            )}
-          </div>
-        ) : null}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {promo.base && (
+            <p className="govuk-body-s" style={{ marginBottom: 0 }}>
+              <span style={{ fontWeight: 'bold', color: '#00703c' }}>Base: </span>
+              <span style={{ color: '#005a30' }}>{formatPromoText(promo.base)}</span>
+            </p>
+          )}
+
+          {promo.loyalty && (
+            <p className="govuk-body-s" style={{ marginBottom: 0 }}>
+              <span style={{ fontWeight: 'bold', color: '#00703c' }}>Loyalty: </span>
+              <span style={{ color: '#005a30' }}>{formatPromoText(promo.loyalty)}</span>
+            </p>
+          )}
+
+          {((promo.start && promo.start > 0) || (promo.end && promo.end > 0)) && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+              {(promo.start && promo.start > 0) && (
+                <p className="govuk-body-s" style={{ marginBottom: 0 }}>
+                  <span style={{ fontWeight: 'bold', color: '#00703c' }}>Start: </span>
+                  <span style={{ color: '#005a30' }}>{formatDate(promo.start)}</span>
+                </p>
+              )}
+
+              {(promo.end && promo.end > 0) && (
+                <p className="govuk-body-s" style={{ marginBottom: 0 }}>
+                  <span style={{ fontWeight: 'bold', color: '#00703c' }}>End: </span>
+                  <span style={{ color: '#005a30' }}>{formatDate(promo.end)}</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {(promo.old_price && promo.old_price > 0) || (promo.new_price && promo.new_price > 0) ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', paddingTop: '10px', marginTop: '5px', borderTop: '1px solid #00703c' }}>
+              {promo.old_price && promo.old_price > 0 && (
+                <p className="govuk-body-s" style={{ marginBottom: 0 }}>
+                  <span style={{ fontWeight: 'bold', color: '#00703c' }}>Before: </span>
+                  <span style={{ fontWeight: 'bold', color: '#005a30' }}>{formatPrice(promo.old_price, currency)}</span>
+                </p>
+              )}
+              {promo.new_price && promo.new_price > 0 && (
+                <p className="govuk-body-s" style={{ marginBottom: 0 }}>
+                  <span style={{ fontWeight: 'bold', color: '#00703c' }}>Current: </span>
+                  <span style={{ fontWeight: 'bold', color: '#005a30' }}>{formatPrice(promo.new_price, currency)}</span>
+                </p>
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
     );
   };
 
   if (productEntries.length === 0) {
     return (
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardContent className="text-center py-12">
-          <p className="text-muted-foreground">No products found</p>
-        </CardContent>
-      </Card>
+      <div className="govuk-inset-text govuk-!-margin-top-6">
+        <p className="govuk-body">No products found</p>
+      </div>
     );
   }
 
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold">Information</h2>
-      
+    <div className="govuk-!-margin-top-4">
       {productEntries.map(([store, product]) => (
-        <Card key={store} className="w-full">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" />
-                {(product.store || store).toUpperCase()}
-              </CardTitle>
-              {product.url && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openPrivateLink(product.url)}
-                  className="h-10 w-10 p-0 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
+        <div key={store} id={(product.store || store).toUpperCase()} className="govuk-!-margin-bottom-4">
+          <div className="govuk-panel govuk-panel--confirmation" style={{ backgroundColor: '#1d70b8', padding: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 className="govuk-panel__title" style={{ fontSize: '1.5rem', marginBottom: 0 }}>
+                {formatStoreName(product.store || store)}
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <p className="govuk-body-s" style={{
+                  color: '#ffffff',
+                  marginBottom: 0,
+                  minWidth: '130px',
+                  textAlign: 'right',
+                  visibility: shareSuccess === (product.store || store) ? 'visible' : 'hidden'
+                }}>
+                  Saved to Clipboard
+                </p>
+                <button
+                  onClick={() => handleShare(product.store || store, product.name || 'Product')}
+                  className="govuk-button govuk-button--secondary"
+                  style={{ marginBottom: 0 }}
+                  title="Share link to this product"
                 >
-                  <ExternalLink className="w-5 h-5" />
-                </Button>
-              )}
+                  Share
+                </button>
+              </div>
             </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Product Image */}
-              <div className="flex flex-col items-center space-y-4 w-full min-w-0">
+          </div>
+
+          <div className="govuk-!-margin-top-4">
+            <div className="govuk-grid-row">
+              <div className="govuk-grid-column-one-half" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 {(() => {
                   const validImages = getValidImages(product.images);
                   if (validImages.length === 0) return null;
-                  
+
                   const imageSrc = validImages[selectedImage[store] || 0];
+                  if (!imageSrc) return null;
+
                   return (
-                    <div className="relative aspect-square w-full max-w-[280px] sm:max-w-[320px] overflow-hidden">
+                    <div style={{ position: 'relative', aspectRatio: '1/1', width: '100%', maxWidth: '320px', overflow: 'hidden' }}>
                       <Image
                         src={imageSrc}
                         alt={product.name || 'Product image'}
                         fill
-                        className="object-contain rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{ objectFit: 'contain', cursor: 'pointer' }}
                         sizes="(max-width: 480px) 280px, (max-width: 768px) 320px, (max-width: 1200px) 40vw, 33vw"
                         onClick={() => openPrivateLink(imageSrc)}
                         onError={(e) => {
@@ -186,24 +230,79 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
                 
                 {(() => {
                   const validImages = getValidImages(product.images);
+                  const scrollState = scrollPositions[store] || { atStart: true, atEnd: false };
                   return validImages.length > 1 && (
-                    <div className="w-full max-w-[280px] sm:max-w-[320px]">
-                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400" 
-                           style={{ scrollbarWidth: 'thin' }}>
+                    <div style={{ width: '100%', maxWidth: '320px', marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                      {validImages.length > 5 && (
+                        <button
+                          onClick={() => {
+                            const container = scrollContainerRefs.current[store];
+                            if (container) {
+                              container.scrollBy({ left: -200, behavior: 'smooth' });
+                            }
+                          }}
+                          disabled={scrollState.atStart}
+                          style={{
+                            width: '28px',
+                            height: '56px',
+                            flexShrink: 0,
+                            backgroundColor: scrollState.atStart ? '#b1b4b6' : '#1d70b8',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: scrollState.atStart ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#ffffff',
+                            fontSize: '24px',
+                            fontWeight: 'bold',
+                            padding: 0,
+                            lineHeight: 1,
+                            opacity: scrollState.atStart ? 0.5 : 1
+                          }}
+                          onMouseEnter={(e) => !scrollState.atStart && (e.currentTarget.style.backgroundColor = '#003078')}
+                          onMouseLeave={(e) => !scrollState.atStart && (e.currentTarget.style.backgroundColor = '#1d70b8')}
+                          title="Scroll to see previous images"
+                        >
+                          ‹
+                        </button>
+                      )}
+                      <div
+                        ref={(el) => { scrollContainerRefs.current[store] = el; }}
+                        onScroll={(e) => updateScrollPosition(store, e.currentTarget)}
+                        style={{
+                          display: 'flex',
+                          gap: '8px',
+                          overflowX: 'auto',
+                          paddingBottom: '8px',
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: '#505a5f #f3f2f1',
+                          flex: 1
+                        }}>
                         {validImages.map((image, index) => (
-                          <div 
-                            key={index} 
-                            className={`relative w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity overflow-hidden rounded border ${
-                              (selectedImage[store] || 0) === index ? 'ring-2 ring-blue-500' : ''
-                            }`}
+                          <div
+                            key={index}
+                            style={{
+                              position: 'relative',
+                              width: '56px',
+                              height: '56px',
+                              flexShrink: 0,
+                              cursor: 'pointer',
+                              border: (selectedImage[store] || 0) === index ? '3px solid #1d70b8' : '1px solid #b1b4b6',
+                              borderRadius: '4px',
+                              overflow: 'hidden',
+                              transition: 'opacity 0.2s'
+                            }}
                             onClick={() => setSelectedImage(prev => ({ ...prev, [store]: index }))}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                           >
                             <Image
                               src={image}
                               alt={`${product.name} ${index + 1}`}
                               fill
-                              className="object-cover"
-                              sizes="(max-width: 640px) 48px, 56px"
+                              style={{ objectFit: 'cover' }}
+                              sizes="56px"
                               onError={(e) => {
                                 console.error('Thumbnail failed to load:', image);
                                 e.currentTarget.style.display = 'none';
@@ -213,122 +312,162 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
                           </div>
                         ))}
                       </div>
+                      {validImages.length > 5 && (
+                        <button
+                          onClick={() => {
+                            const container = scrollContainerRefs.current[store];
+                            if (container) {
+                              container.scrollBy({ left: 200, behavior: 'smooth' });
+                            }
+                          }}
+                          disabled={scrollState.atEnd}
+                          style={{
+                            width: '28px',
+                            height: '56px',
+                            flexShrink: 0,
+                            backgroundColor: scrollState.atEnd ? '#b1b4b6' : '#1d70b8',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: scrollState.atEnd ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#ffffff',
+                            fontSize: '24px',
+                            fontWeight: 'bold',
+                            padding: 0,
+                            lineHeight: 1,
+                            opacity: scrollState.atEnd ? 0.5 : 1
+                          }}
+                          onMouseEnter={(e) => !scrollState.atEnd && (e.currentTarget.style.backgroundColor = '#003078')}
+                          onMouseLeave={(e) => !scrollState.atEnd && (e.currentTarget.style.backgroundColor = '#1d70b8')}
+                          title="Scroll to see more images"
+                        >
+                          ›
+                        </button>
+                      )}
                     </div>
                   );
                 })()}
               </div>
 
-              {/* Product Details */}
-              <div className="space-y-4 min-w-0">
-                <div className="min-w-0">
-                  <h3 className="text-xl font-semibold break-words">{product.name || 'Unknown Product'}</h3>
-                  {product.brand && (
-                    <p className="text-muted-foreground break-words">by {product.brand}</p>
+              <div className="govuk-grid-column-one-half">
+                <h3 className="govuk-heading-m" style={{ marginBottom: '5px' }}>
+                  {product.url ? (
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openPrivateLink(product.url);
+                      }}
+                      className="govuk-link"
+                      style={{ textDecoration: 'underline' }}
+                    >
+                      {product.name || 'Unknown Product'}
+                    </a>
+                  ) : (
+                    product.name || 'Unknown Product'
                   )}
-                </div>
+                </h3>
+                {product.brand && (
+                  <p className="govuk-body" style={{ color: '#505a5f', marginBottom: '10px' }}>by {product.brand}</p>
+                )}
 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
-                  <span className="break-all">ID: {product.id}</span>
-                </div>
+                <p className="govuk-body-s" style={{ color: '#505a5f', marginBottom: '10px' }}>
+                  ID: {product.id}
+                </p>
 
-                {/* Categories */}
                 {product.categories && product.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1 max-w-full overflow-hidden">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
                     {product.categories.slice(0, 5).map((category, index) => (
-                      <Badge key={index} variant="outline" className="max-w-full truncate">
+                      <strong key={index} className="govuk-tag" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {category}
-                      </Badge>
+                      </strong>
                     ))}
                   </div>
                 )}
 
-                {/* Price Information */}
-                <div className="space-y-2">
+                <div style={{ marginTop: '15px' }}>
                   {product.price > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold">
-                        {product.currency} {product.price.toFixed(2)}
-                      </div>
+                    <>
+                      <p className="govuk-body" style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '8px' }}>
+                        {formatPrice(product.price, product.currency)}
+                      </p>
                       {product.discounts && product.discounts.length > 0 && (
-                        <div className="space-y-1">
+                        <div style={{ marginTop: '8px', marginBottom: '10px' }}>
                           {product.discounts.map((discountPrice, index) => {
                             const discount = typeof discountPrice === 'number' ? discountPrice : parseFloat(discountPrice);
                             const percentage = Math.round(((product.price - discount) / product.price) * 100);
                             return (
-                              <div key={index} className="border-2 border-red-500 bg-red-50 px-3 py-2 rounded-lg">
-                                <div className="text-2xl font-bold text-red-600">
-                                  {product.currency} {discount.toFixed(2)}
-                                </div>
-                                <div className="text-sm font-medium text-red-600">
+                              <div key={index} className="govuk-warning-text" style={{ border: '2px solid #d4351c', backgroundColor: '#fff5f5', padding: '12px', marginBottom: '8px' }}>
+                                <p className="govuk-body" style={{ fontSize: '2rem', fontWeight: 'bold', color: '#d4351c', marginBottom: '3px' }}>
+                                  {formatPrice(discount, product.currency)}
+                                </p>
+                                <p className="govuk-body-s" style={{ fontWeight: 'bold', color: '#d4351c', marginBottom: 0 }}>
                                   {percentage}% OFF
-                                </div>
+                                </p>
                               </div>
                             );
                           })}
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
-                  
+
                   {product.unit_price > 0 && product.unit_of_measure && (
-                    <div className="text-sm text-muted-foreground">
-                      {product.currency} {product.unit_price.toFixed(2)} / {product.unit_of_measure}
-                    </div>
+                    <p className="govuk-body-s" style={{ color: '#505a5f', marginBottom: '5px' }}>
+                      {formatPrice(product.unit_price, product.currency)}/{product.unit_of_measure}
+                    </p>
                   )}
-                  
+
                   {product.quantity > 0 && (
-                    <div className="text-sm text-muted-foreground">
-                      Stock: {product.quantity}
-                    </div>
+                    <p className="govuk-body-s" style={{ color: '#505a5f', marginBottom: '5px' }}>
+                      Min. Stock: {product.quantity}
+                    </p>
                   )}
                   {product.quantity === 0 && (
-                    <div className="border-2 border-red-500 bg-red-50 px-3 py-2 rounded-lg">
-                      <div className="text-sm font-medium text-red-600">
-                        OUT OF STOCK
-                      </div>
+                    <div className="govuk-warning-text" style={{ border: '2px solid #d4351c', backgroundColor: '#fff5f5', padding: '10px', marginTop: '8px' }}>
+                      <p className="govuk-body-s" style={{ fontWeight: 'bold', color: '#d4351c', marginBottom: 0 }}>
+                        NO STOCK AVAILABLE
+                      </p>
                     </div>
                   )}
                 </div>
 
-                {/* Rating */}
                 {product.rating > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="ml-1 font-medium">{(product.rating * 100).toFixed(0)}%</span>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '15px' }}>
+                    <span className="govuk-body">
+                      Rating: <strong>{(product.rating * 5).toFixed(2)}</strong>/5
+                    </span>
                     {product.rating_count > 0 && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="govuk-body-s" style={{ color: '#505a5f' }}>
                         ({product.rating_count} reviews)
                       </span>
                     )}
                   </div>
                 )}
 
-                {/* Promotions */}
                 {product.promotions && product.promotions.length > 0 && (
-                  <div className="space-y-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setExpandedPromos(prev => ({ ...prev, [`${store}-promo`]: !prev[`${store}-promo`] }))}
-                      className="flex items-center gap-2 h-auto p-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700"
-                    >
-                      <h4 className="font-medium">Promotions</h4>
-                      {expandedPromos[`${store}-promo`] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </Button>
-                    <div className="space-y-3">
-                      {expandedPromos[`${store}-promo`] && product.promotions.map((promo, index) => 
-                        renderPromotion(promo, index)
-                      )}
-                    </div>
+                  <div>
+                    <details className="govuk-details" style={{ marginBottom: 0 }}>
+                      <summary className="govuk-details__summary">
+                        <span className="govuk-details__summary-text">
+                          Promotions
+                        </span>
+                      </summary>
+                      <div className="govuk-details__text" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {product.promotions.map((promo, index) =>
+                          renderPromotion(promo, index, product.currency)
+                        )}
+                      </div>
+                    </details>
                   </div>
                 )}
 
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   );

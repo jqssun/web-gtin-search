@@ -2,12 +2,10 @@
 
 import BarcodeScanner from '@/components/BarcodeScanner';
 import ProductDetails from '@/components/ProductDetails';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { getProductByGTIN } from '@/lib/api';
 import { GTINResponse } from '@/lib/types';
 import JsBarcode from 'jsbarcode';
-import { Copy, Loader2, QrCode } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -104,83 +102,79 @@ export default function GTINPage({ params }: PageProps) {
   }, [params]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold flex items-center justify-center gap-2">
-            <QrCode className="w-8 h-8" />
-            Shop API
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Scan barcodes to get information
-          </p>
-        </div>
+    <div className="govuk-grid-row">
+      <div className="govuk-grid-column-full">
+        <Link href="/" className="govuk-back-link">
+          Back
+        </Link>
 
         <BarcodeScanner onScan={handleScan} isLoading={loading} />
 
         {gtin && (
-          <div className="max-w-md mx-auto">
-            <div className="relative border-2 border-blue-500 bg-blue-50 dark:bg-blue-950 px-4 py-4 rounded-lg">
-              <div className="text-center space-y-3">
-                <div className="text-xs font-medium text-blue-700 dark:text-blue-300">
+          <div className="govuk-!-margin-top-4">
+            <div className="govuk-notification-banner" role="region" aria-labelledby="gtin-banner-title">
+              <div className="govuk-notification-banner__header">
+                <h2 className="govuk-notification-banner__title" id="gtin-banner-title">
                   GTIN
-                </div>
-                
-                {/* Barcode display */}
-                <div className="flex justify-center">
-                  <svg 
+                </h2>
+              </div>
+              <div className="govuk-notification-banner__content" style={{ position: 'relative', padding: 0, display: 'flex', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 0', maxWidth: 'none' }}>
+                  <svg
                     ref={barcodeRef}
-                    className="max-w-full h-auto"
+                    style={{ maxWidth: '100%', height: 'auto', marginBottom: '10px' }}
                   ></svg>
+                  <p className="govuk-body" style={{ fontFamily: 'monospace', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: 0 }}>
+                    {gtin}
+                  </p>
                 </div>
-                
-                {/* GTIN number below barcode */}
-                <div className="text-lg font-mono font-semibold text-blue-900 dark:text-blue-100 break-all">
-                  {gtin}
+
+                <div style={{ position: 'absolute', top: '50%', right: '15px', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    onClick={handleCopyUrl}
+                    className="govuk-button govuk-button--secondary"
+                    title="Copy page URL to clipboard"
+                    style={{ marginBottom: 0 }}
+                    data-module="govuk-button"
+                  >
+                    Copy URL
+                  </button>
+
+                  <p className="govuk-body-s" style={{ color: '#00703c', marginBottom: 0, minHeight: '20px', visibility: copySuccess ? 'visible' : 'hidden' }}>
+                    Saved to Clipboard
+                  </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopyUrl}
-                className="absolute top-2 right-2 h-8 w-8 p-0 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:hover:bg-blue-700 text-blue-700 dark:text-blue-300"
-                title="Copy page URL"
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-              {copySuccess && (
-                <div className="text-xs text-blue-600 dark:text-blue-400 mt-2 text-center">
-                  Saved URL to Clipboard
-                </div>
-              )}
             </div>
           </div>
         )}
 
+        <h1 className="govuk-heading-xl govuk-!-margin-top-6">Results</h1>
+
         {loading && (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin mr-2" />
-            <span>Fetching product...</span>
+          <div className="govuk-!-margin-top-6" style={{ textAlign: 'center', padding: '40px 0' }}>
+            <p className="govuk-body" style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Loading...</p>
+            <p className="govuk-body-s" style={{ color: '#505a5f' }}>Fetching product information</p>
           </div>
         )}
 
         {error && (
-          <div className="max-w-2xl mx-auto">
-            <Alert variant="destructive">
-              <AlertDescription className="flex items-center justify-between">
-                <span>{error}</span>
-                {gtin && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRescan}
-                    disabled={loading}
-                  >
-                    Retry
-                  </Button>
-                )}
-              </AlertDescription>
-            </Alert>
+          <div className="govuk-error-summary govuk-!-margin-top-6" aria-labelledby="error-summary-title" role="alert" data-module="govuk-error-summary">
+            <h2 className="govuk-error-summary__title" id="error-summary-title">
+              There is a problem
+            </h2>
+            <div className="govuk-error-summary__body">
+              <p className="govuk-body">{error}</p>
+              {gtin && (
+                <button
+                  className="govuk-button govuk-button--secondary govuk-!-margin-top-3"
+                  onClick={handleRescan}
+                  disabled={loading}
+                >
+                  Retry
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -189,17 +183,16 @@ export default function GTINPage({ params }: PageProps) {
         )}
 
         {!loading && !error && Object.keys(products).length === 0 && gtin && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
+          <div className="govuk-!-margin-top-6" style={{ textAlign: 'center', padding: '40px 0' }}>
+            <p className="govuk-body">
               No products found for GTIN: {gtin}
             </p>
-            <Button
-              variant="outline"
+            <button
+              className="govuk-button govuk-!-margin-top-4"
               onClick={handleRescan}
-              className="mt-4"
             >
               Try Again
-            </Button>
+            </button>
           </div>
         )}
       </div>

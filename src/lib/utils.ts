@@ -1,8 +1,29 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+const storeNameMap: Record<string, string> = {
+  asda: 'Asda',
+  boots: 'Boots',
+  marksandspencer: 'M&S',
+  sainsburys: 'Sainsbury\'s',
+  superdrug: 'Superdrug',
+  tesco: 'Tesco',
+  waitrose: 'Waitrose & Partners'
+};
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+const currencySymbolMap: Record<string, string> = {
+  GBP: '£',
+  USD: '$',
+  EUR: '€'
+};
+
+export function formatStoreName(storeName: string): string {
+  return storeNameMap[storeName] || storeName;
+}
+
+export function getStoreNames(): string[] {
+  return Object.values(storeNameMap);
+}
+
+export function getCurrencySymbol(currency: string): string {
+  return currencySymbolMap[currency] || currency;
 }
 
 export function openPrivateLink(url: string): void {
@@ -11,7 +32,7 @@ export function openPrivateLink(url: string): void {
   link.target = '_blank'
   link.rel = 'noopener noreferrer nofollow'
   link.referrerPolicy = 'no-referrer'
-  
+
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
