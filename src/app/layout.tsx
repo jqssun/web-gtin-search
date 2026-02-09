@@ -23,10 +23,7 @@ export default function RootLayout({
         <link rel="icon" sizes="any" href="/assets/images/favicon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/assets/manifest.json" />
       </head>
-      <body className="govuk-template__body">
-        <Script id="govuk-body-start" strategy="beforeInteractive">
-          {`document.body.className += ' js-enabled' + ('noModule' in HTMLScriptElement.prototype ? ' govuk-frontend-supported' : '');`}
-        </Script>
+      <body className="govuk-template__body js-enabled govuk-frontend-supported">
 
         <a href="#main-content" className="govuk-skip-link" data-module="govuk-skip-link">
           Skip to main content
@@ -49,7 +46,7 @@ export default function RootLayout({
                 Beta
               </strong>
               <span className="govuk-phase-banner__text">
-                This is a new service – your <a className="govuk-link" href="https://github.com/jqssun/web-gtin-search" target="_blank">feedback</a> will help us to improve it.
+                This is a new service. Help us make it better and <a className="govuk-link" href="https://github.com/jqssun/web-gtin-search/pulls" target="_blank">send your improvements</a>.
               </span>
             </p>
           </div>

@@ -434,7 +434,7 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
 
                 {product.categories && product.categories.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-                    {product.categories.filter(category => category !== 'None').slice(0, 5).map((category, index) => (
+                    {[...new Set(product.categories)].filter(category => category !== 'None').slice(0, 5).map((category, index) => (
                       <strong key={index} className="govuk-tag" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {category}
                       </strong>
