@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <div className="govuk-grid-row">
       <div className="govuk-grid-column-two-thirds">
-        <h1 className="govuk-heading-xl">GTIN Search</h1>
+        <h1 className="govuk-heading-xl">Search GTIN</h1>
         <p className="govuk-body-l">
           Find product information by scanning barcodes or entering the trade item's Global Trade Item Number (GTIN).
         </p>
@@ -77,7 +77,7 @@ export default function Home() {
             </span>
           </summary>
           <div className="govuk-details__text">
-            Your privacy is protected. Barcode scanning and decoding happens entirely within your browser. No data is transmitted to the server.
+            Barcode scanning and decoding happens entirely within your browser. No data is transmitted to the server.
           </div>
         </details>
       </div>

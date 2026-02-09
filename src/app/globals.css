@@ -6,3 +6,14 @@
     opacity: 0.5;
   }
 }
+
+@media print {
+  .govuk-phase-banner a[href]::after {
+    content: none !important;
+  }
+  .govuk-form-group,
+  .govuk-button-group,
+  .govuk-back-link {
+    display: none !important;
+  }
+}

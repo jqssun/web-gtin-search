@@ -332,7 +332,7 @@ export default function BarcodeScanner({ onScan, isLoading }: BarcodeScannerProp
               </p>
             ) : isScanning ? (
               <p className="govuk-body-s" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: 0, color: '#ffffff' }}>
-                <span style={{ width: '8px', height: '8px', backgroundColor: '#00703c', borderRadius: '50%', display: 'inline-block', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></span>
+                <span style={{ width: '8px', height: '8px', backgroundColor: '#ffffff', borderRadius: '50%', display: 'inline-block', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></span>
                 Scanning...
               </p>
             ) : (

@@ -15,6 +15,9 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
   const [shareSuccess, setShareSuccess] = useState<string | null>(null);
   const scrollContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [scrollPositions, setScrollPositions] = useState<Record<string, { atStart: boolean; atEnd: boolean }>>({});
+  const [showUpdatedTime, setShowUpdatedTime] = useState(true);
+  const [showNoStock, setShowNoStock] = useState(true);
+  const [showPromotions, setShowPromotions] = useState(true);
 
   const getValidImages = (images: string[] | undefined) => {
     const filtered = images?.filter(img => img && img.trim() !== '') || [];
@@ -23,7 +26,7 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
 
   const formatDate = (timestamp: number) => {
     if (timestamp <= 0) return null;
-    return new Date(timestamp * 1000).toLocaleDateString(undefined, {
+    return new Date(timestamp * 1000).toLocaleDateString(navigator.language, {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -167,24 +170,76 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
   }
 
 
+  const filteredProductEntries = productEntries.filter(([, product]) =>
+    showNoStock || product.quantity !== 0
+  );
+
   return (
     <div className="govuk-!-margin-top-4">
-      {productEntries.map(([store, product]) => (
+      <h1 className="govuk-heading-xl">{filteredProductEntries.length} result{filteredProductEntries.length !== 1 ? 's' : ''} found</h1>
+      <div className="govuk-checkboxes govuk-checkboxes--small" style={{ marginBottom: '20px' }}>
+        <div className="govuk-checkboxes__item">
+          <input
+            className="govuk-checkboxes__input"
+            id="show-updated-time"
+            name="show-updated-time"
+            type="checkbox"
+            checked={showUpdatedTime}
+            onChange={(e) => setShowUpdatedTime(e.target.checked)}
+          />
+          <label className="govuk-label govuk-checkboxes__label" htmlFor="show-updated-time">
+            Show updated time
+          </label>
+        </div>
+        <div className="govuk-checkboxes__item">
+          <input
+            className="govuk-checkboxes__input"
+            id="show-no-stock"
+            name="show-no-stock"
+            type="checkbox"
+            checked={showNoStock}
+            onChange={(e) => setShowNoStock(e.target.checked)}
+          />
+          <label className="govuk-label govuk-checkboxes__label" htmlFor="show-no-stock">
+            Show out of stock
+          </label>
+        </div>
+        <div className="govuk-checkboxes__item">
+          <input
+            className="govuk-checkboxes__input"
+            id="show-promotions"
+            name="show-promotions"
+            type="checkbox"
+            checked={showPromotions}
+            onChange={(e) => setShowPromotions(e.target.checked)}
+          />
+          <label className="govuk-label govuk-checkboxes__label" htmlFor="show-promotions">
+            Show promotions
+          </label>
+        </div>
+      </div>
+      {filteredProductEntries.map(([store, product]) => (
         <div key={store} id={(product.store || store).toUpperCase()} className="govuk-!-margin-bottom-4">
           <div className="govuk-panel govuk-panel--confirmation" style={{ backgroundColor: '#1d70b8', padding: '15px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h3 className="govuk-panel__title" style={{ fontSize: '1.5rem', marginBottom: 0 }}>
-                {formatStoreName(product.store || store)}
-              </h3>
+              <div>
+                <h3 className="govuk-panel__title" style={{ fontSize: '1.5rem', marginBottom: 0 }}>
+                  {formatStoreName(product.store || store)}
+                </h3>
+                {showUpdatedTime && product.time && product.time > 0 && (
+                  <p style={{ fontSize: '0.875rem', fontWeight: 'normal', marginTop: '4px', marginBottom: 0, color: '#ffffff', textAlign: 'left' }}>
+                    {formatDate(product.time)}
+                  </p>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <p className="govuk-body-s" style={{
                   color: '#ffffff',
                   marginBottom: 0,
-                  minWidth: '130px',
                   textAlign: 'right',
                   visibility: shareSuccess === (product.store || store) ? 'visible' : 'hidden'
                 }}>
-                  Saved to Clipboard
+                  Copied
                 </p>
                 <button
                   onClick={() => handleShare(product.store || store, product.name || 'Product')}
@@ -379,7 +434,7 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
 
                 {product.categories && product.categories.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-                    {product.categories.slice(0, 5).map((category, index) => (
+                    {product.categories.filter(category => category !== 'None').slice(0, 5).map((category, index) => (
                       <strong key={index} className="govuk-tag" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {category}
                       </strong>
@@ -397,6 +452,7 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
                         <div style={{ marginTop: '8px', marginBottom: '10px' }}>
                           {product.discounts.map((discountPrice, index) => {
                             const discount = typeof discountPrice === 'number' ? discountPrice : parseFloat(discountPrice);
+                            if (discount === product.price) return null;
                             const percentage = Math.round(((product.price - discount) / product.price) * 100);
                             return (
                               <div key={index} className="govuk-warning-text" style={{ border: '2px solid #d4351c', backgroundColor: '#fff5f5', padding: '12px', marginBottom: '8px' }}>
@@ -449,7 +505,7 @@ export default function ProductDetails({ products }: ProductDetailsProps) {
 
                 {product.promotions && product.promotions.length > 0 && (
                   <div>
-                    <details className="govuk-details" style={{ marginBottom: 0 }}>
+                    <details className="govuk-details" style={{ marginBottom: 0 }} open={showPromotions}>
                       <summary className="govuk-details__summary">
                         <span className="govuk-details__summary-text">
                           Promotions

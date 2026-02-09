@@ -4,7 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GTIN Search",
+  title: "Search GTIN",
   description: "View product information data using GTIN",
 };
 
@@ -36,7 +36,7 @@ export default function RootLayout({
           <div className="govuk-header__container govuk-width-container">
             <div className="govuk-header__content" style={{ paddingLeft: 0 }}>
               <Link href="/" className="govuk-header__link govuk-header__service-name">
-                GTIN Search
+                Search GTIN
               </Link>
             </div>
           </div>
@@ -77,11 +77,10 @@ export default function RootLayout({
                 </ul>
 
                 This project is an independent research tool designed to enhance price transparency. The methodology is aligned with the <a className="govuk-footer__link" href="https://www.gov.uk/government/publications/price-transparency-cma209" target="_blank" rel="noopener noreferrer">CMA's Price Transparency Guidance (CMA209)</a> and the <a className="govuk-footer__link" href="https://www.legislation.gov.uk/ukpga/2024" target="_blank" rel="noopener noreferrer">Digital Markets, Competition and Consumers Act 2024 (DMCCA)</a>. Retail and unit pricing information is used to assist consumers in making informed decisions, envisioned by the <a className="govuk-footer__link" href="https://www.legislation.gov.uk/uksi/2004/102/contents" target="_blank" rel="noopener noreferrer">Price Marking Order 2004 (amended 2026)</a> and <a className="govuk-footer__link" href="https://www.legislation.gov.uk/uksi/2008/1277/contents" target="_blank" rel="noopener noreferrer">Consumer Protection from Unfair Trading Regulations 2008 (CPRs)</a>.
-
                 <br /><br />
-                This public service is free and open source. Barcode scanner based on <a className="govuk-footer__link" href="https://github.com/zxing-js/library" target="_blank" rel="noopener noreferrer">ZXing ("zebra crossing")</a>. Font is <a className="govuk-footer__link" href="https://www.k-type.com/fonts/transport-new/" target="_blank" rel="noopener noreferrer">Transport New</a>.
 
                 <span className="govuk-footer__licence-description">
+                  This public service is free and open source. Barcode scanner based on <a className="govuk-footer__link" href="https://github.com/zxing-js/library" target="_blank" rel="noopener noreferrer">ZXing ("zebra crossing")</a>. Font is <a className="govuk-footer__link" href="https://www.k-type.com/fonts/transport-new/" target="_blank" rel="noopener noreferrer">Transport New</a>.
                   Site design using the {" "}
                   <a
                     className="govuk-footer__link"

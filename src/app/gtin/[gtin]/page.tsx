@@ -96,6 +96,7 @@ export default function GTINPage({ params }: PageProps) {
     params.then(({ gtin: gtinParam }) => {
       setGtin(gtinParam);
       if (gtinParam) {
+        document.title = `${gtinParam} - Search GTIN`;
         fetchProductData(gtinParam);
       }
     });
@@ -113,10 +114,21 @@ export default function GTINPage({ params }: PageProps) {
         {gtin && (
           <div className="govuk-!-margin-top-4">
             <div className="govuk-notification-banner" role="region" aria-labelledby="gtin-banner-title">
-              <div className="govuk-notification-banner__header">
+              <div className="govuk-notification-banner__header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <h2 className="govuk-notification-banner__title" id="gtin-banner-title">
                   GTIN
                 </h2>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.print();
+                  }}
+                  className="govuk-notification-banner__title govuk-link"
+                  style={{ color: '#ffffff', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  Print
+                </a>
               </div>
               <div className="govuk-notification-banner__content" style={{ position: 'relative', padding: 0, display: 'flex', justifyContent: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 0', maxWidth: 'none' }}>
@@ -137,19 +149,17 @@ export default function GTINPage({ params }: PageProps) {
                     style={{ marginBottom: 0 }}
                     data-module="govuk-button"
                   >
-                    Copy URL
+                    Share
                   </button>
 
                   <p className="govuk-body-s" style={{ color: '#00703c', marginBottom: 0, minHeight: '20px', visibility: copySuccess ? 'visible' : 'hidden' }}>
-                    Saved to Clipboard
+                    Copied
                   </p>
                 </div>
               </div>
             </div>
           </div>
         )}
-
-        <h1 className="govuk-heading-xl govuk-!-margin-top-6">Results</h1>
 
         {loading && (
           <div className="govuk-!-margin-top-6" style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -191,7 +201,7 @@ export default function GTINPage({ params }: PageProps) {
               className="govuk-button govuk-!-margin-top-4"
               onClick={handleRescan}
             >
-              Try Again
+              Try again
             </button>
           </div>
         )}

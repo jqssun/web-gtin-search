@@ -5,7 +5,7 @@ const storeNameMap: Record<string, string> = {
   sainsburys: 'Sainsbury\'s',
   superdrug: 'Superdrug',
   tesco: 'Tesco',
-  waitrose: 'Waitrose & Partners'
+  waitrose: 'Waitrose'
 };
 
 const currencySymbolMap: Record<string, string> = {
